@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bobby | Gestão Financeira e Contratos</title>
+
+<!-- Fontes (fallback: system-ui se estiver offline) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Tailwind CSS e Chart.js via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          abacate: { DEFAULT: '#C2CD83', 50: '#F6F8E8', 100: '#ECF0CF', 200: '#DCE3AE', 300: '#C2CD83', 400: '#A9B865', 500: '#8C9C4B', 700: '#4F5A26', 900: '#262C10' }
+        },
+        fontFamily: {
+          display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+          sans: ['"Instrument Sans"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+        }
+      }
+    }
+  };
+</script>
+
+<style>
+  :root { color-scheme: light; }
+  html, body { background: #EEF1E1; }
+  body { color: #20241A; font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .num { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .card { background: #fff; border-radius: 1rem; box-shadow: 0 1px 2px rgba(38,44,16,.06), 0 8px 24px -8px rgba(38,44,16,.14); overflow: hidden; }
+  .card-title { background: #C2CD83; color: #262C10; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; }
+  :focus-visible { outline: 3px solid #4F5A26; outline-offset: 2px; border-radius: 6px; }
+
+  /* Botões */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; height: 2.5rem; padding: 0 1rem; border-radius: .75rem; font-weight: 600; font-size: .875rem; transition: background-color .15s; white-space: nowrap; }
+  .btn-primario { background: #262C10; color: #E9EEC9; }
+  .btn-primario:hover { background: #3A4318; }
+  .btn-suave { background: #fff; color: #262C10; border: 1px solid rgba(79,90,38,.35); }
+  .btn-suave:hover { background: #F6F8E8; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: .55rem; color: #4F5A26; }
+  .icon-btn:hover { background: #ECF0CF; }
+  .icon-btn.perigo { color: #B42318; }
+  .icon-btn.perigo:hover { background: #FEE4E2; }
+
+  /* Formulário */
+  .rotulo { display: block; font-size: .8rem; font-weight: 600; color: #3B4030; margin-bottom: .3rem; }
+  .campo { width: 100%; height: 2.6rem; border-radius: .7rem; border: 1px solid #CBD39D; background: #fff; padding: 0 .75rem; font-size: .9rem; }
+  .campo:focus { outline: 3px solid rgba(140,156,75,.45); outline-offset: 0; border-color: #8C9C4B; }
+  .campo:user-invalid { border-color: #B42318; }
+  .campo[readonly] { background: #F1F5DA; color: #262C10; font-weight: 700; cursor: default; border-style: dashed; }
+  dialog { border: 0; padding: 0; background: transparent; max-width: none; max-height: 94vh; }
+  dialog::backdrop { background: rgba(38,44,16,.55); backdrop-filter: blur(2px); }
+
+  /* Menu "Mais" */
+  details.menu > summary { list-style: none; cursor: pointer; }
+  details.menu > summary::-webkit-details-marker { display: none; }
+  .menu-lista { position: absolute; right: 0; top: calc(100% + .4rem); z-index: 30; min-width: 15.5rem; background: #fff; color: #20241A; border-radius: .85rem; padding: .35rem; box-shadow: 0 12px 32px -8px rgba(38,44,16,.35), 0 0 0 1px rgba(79,90,38,.15); }
+  .menu-lista button { display: block; width: 100%; text-align: left; padding: .55rem .75rem; border-radius: .55rem; font-size: .85rem; font-weight: 500; }
+  .menu-lista button:hover { background: #F1F5DA; }
+  .menu-lista button.perigo { color: #B42318; }
+  .menu-lista button.perigo:hover { background: #FEE4E2; }
+  .menu-lista hr { border: 0; border-top: 1px solid #ECF0CF; margin: .3rem 0; }
+
+  /* Tabela */
+  table.dt { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .85rem; }
+  table.dt thead th { background: #C2CD83; color: #262C10; font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; padding: .75rem .85rem; text-align: left; white-space: nowrap; user-select: none; position: sticky; top: 0; }
+  table.dt thead th.ordena { cursor: pointer; }
+  table.dt thead th.ordena:hover { background: #B6C274; }
+  table.dt thead th.r, table.dt td.r { text-align: right; }
+  table.dt thead th .arrow { display: inline-block; width: .8em; margin-left: .25rem; opacity: .35; }
+  table.dt thead th[aria-sort="ascending"] .arrow, table.dt thead th[aria-sort="descending"] .arrow { opacity: 1; }
+  table.dt tbody td { padding: .65rem .85rem; border-bottom: 1px solid #EEF1E1; white-space: nowrap; }
+  table.dt tbody tr:nth-child(even) td { background: #FAFBF3; }
+  table.dt tbody tr:hover td { background: #F1F5DA; }
+  table.dt tfoot td { padding: .75rem .85rem; background: #F6F8E8; font-weight: 600; border-top: 2px solid #C2CD83; white-space: nowrap; }
+  td.desc { white-space: normal; min-width: 14rem; }
+
+  /* Coluna de ações: fixa à esquerda, sempre visível ao rolar a tabela */
+  table.dt tbody td { background: #fff; }
+  table.dt thead th { z-index: 2; }
+  table.dt thead th.col-acoes { left: 0; z-index: 4; }
+  table.dt tbody td.col-acoes { position: sticky; left: 0; z-index: 3; box-shadow: 1px 0 0 #DCE3AE; }
+  table.dt tbody tr.linha { cursor: pointer; }
+  .btn-editar { display: inline-flex; align-items: center; gap: .35rem; height: 2rem; padding: 0 .7rem; border-radius: .55rem; background: #262C10; color: #E9EEC9; font-weight: 600; font-size: .8rem; }
+  .btn-editar:hover { background: #3A4318; }
+
+  .pg-btn { min-width: 2.25rem; height: 2.25rem; padding: 0 .6rem; border-radius: .6rem; border: 1px solid #DCE3AE; background: #fff; font-weight: 600; font-size: .85rem; }
+  .pg-btn:hover:not(:disabled) { background: #ECF0CF; }
+  .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .pg-btn[aria-current="page"] { background: #4F5A26; color: #fff; border-color: #4F5A26; }
+
+  /* Aviso */
+  #toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem); opacity: 0; pointer-events: none; z-index: 60; display: flex; align-items: center; gap: 1rem; background: #262C10; color: #F1F5DA; padding: .75rem 1.1rem; border-radius: .85rem; font-size: .9rem; font-weight: 500; box-shadow: 0 12px 30px -8px rgba(0,0,0,.4); transition: opacity .2s, transform .2s; max-width: 92vw; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+  #toast button { color: #C2CD83; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+
+<body class="min-h-screen">
+
+<!-- ======================= HEADER ======================= -->
+<header class="bg-abacate shadow-[0_2px_0_0_rgba(79,90,38,.15)]">
+  <div class="mx-auto max-w-[1400px] px-4 sm:px-6 py-4 flex flex-col xl:flex-row xl:items-center gap-4 xl:gap-8">
+
+    <!-- Logo + título -->
+    <div class="flex items-center gap-4 min-w-0">
+      <div class="flex items-center gap-2.5 shrink-0">
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+          <rect width="40" height="40" rx="11" fill="#262C10"/>
+          <path d="M13 9h8.2c3.6 0 5.8 1.9 5.8 4.9 0 2-1 3.4-2.7 4.1 2.3.6 3.7 2.3 3.7 4.8 0 3.4-2.5 5.7-6.6 5.7H13V9zm4 7.2h3.3c1.3 0 2-.6 2-1.7s-.7-1.7-2-1.7H17v3.4zm0 8.6h3.7c1.4 0 2.2-.7 2.2-1.9s-.8-1.9-2.2-1.9H17v3.8z" fill="#C2CD83"/>
+        </svg>
+        <span class="font-display text-2xl font-extrabold text-abacate-900 tracking-tight">Bobby</span>
+      </div>
+      <div class="hidden sm:block w-px h-9 bg-abacate-700/30"></div>
+      <h1 class="font-display text-xl sm:text-2xl font-bold text-abacate-900 leading-tight">Gestão Financeira e Contratos</h1>
+    </div>
+
+    <!-- Filtros e ação principal -->
+    <div class="xl:ml-auto flex flex-col md:flex-row md:flex-wrap md:items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label for="filtroCliente" class="text-sm font-semibold text-abacate-900">Cliente</label>
+        <select id="filtroCliente" class="h-10 min-w-[12rem] rounded-xl border border-abacate-500/40 bg-white px-3 text-sm font-medium shadow-sm"></select>
+      </div>
+      <div id="alertaVencer" role="status" aria-live="polite"
+           class="flex items-center gap-2 rounded-xl bg-red-600 text-white px-4 h-10 text-sm font-semibold shadow-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Contratos a vencer dentro de 31 dias: <strong id="qtdVencer" class="num text-base">0</strong></span>
+      </div>
+      <button type="button" class="btn btn-primario" data-acao="novo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Novo contrato
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="mx-auto max-w-[1400px] px-4 sm:px-6 py-6 space-y-6">
+
+  <!-- ======================= KPIs ======================= -->
+  <section aria-label="Indicadores" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+    <article class="card">
+      <h2 class="card-title px-4 py-2 text-sm">Valor Liquidado</h2>
+      <p id="kpiLiquidado" class="num px-4 py-5 text-2xl sm:text-3xl font-extrabold">–</p>
+    </article>
+    <article class="card">
+      <h2 class="card-title px-4 py-2 text-sm">Valor em Aberto</h2>
+      <p id="kpiAberto" class="num px-4 py-5 text-2xl sm:text-3xl font-extrabold">–</p>
+    </article>
+    <article class="card">
+      <h2 class="card-title px-4 py-2 text-sm">Valor Total</h2>
+      <p id="kpiTotal" class="num px-4 py-5 text-2xl sm:text-3xl font-extrabold">–</p>
+    </article>
+    <article class="card">
+      <h2 class="card-title px-4 py-2 text-sm">Custo</h2>
+      <p id="kpiCusto" class="num px-4 py-5 text-2xl sm:text-3xl font-extrabold">–</p>
+    </article>
+    <article class="card col-span-2 md:col-span-1">
+      <h2 class="card-title px-4 py-2 text-sm">Margem de Lucro</h2>
+      <p id="kpiMargem" class="num px-4 py-5 text-2xl sm:text-3xl font-extrabold">–</p>
+    </article>
+  </section>
+
+  <!-- ======================= GRÁFICOS ======================= -->
+  <section aria-label="Gráficos" class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+    <article class="card lg:col-span-3">
+      <h2 class="card-title px-5 py-2.5">Margem de Lucro por Cliente</h2>
+      <div class="p-4 sm:p-5">
+        <div class="relative h-[320px]">
+          <canvas id="chartMargem" role="img" aria-label="Gráfico de barras da margem de lucro por cliente"></canvas>
+        </div>
+      </div>
+    </article>
+
+    <article class="card lg:col-span-2">
+      <h2 class="card-title px-5 py-2.5">Comparativo Percentual</h2>
+      <div class="p-4 sm:p-5 flex flex-col items-center gap-4">
+        <div class="relative h-[240px] w-full max-w-[280px]">
+          <canvas id="chartRosca" role="img" aria-label="Gráfico de rosca comparando valor liquidado e valor em aberto"></canvas>
+        </div>
+        <ul id="legendaRosca" class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-medium"></ul>
+      </div>
+    </article>
+  </section>
+
+  <!-- ======================= TABELA ======================= -->
+  <section aria-label="Contratos" class="card !overflow-visible">
+    <div class="card-title rounded-t-2xl px-5 py-3 flex flex-col xl:flex-row xl:items-center gap-3">
+      <h2 class="text-base sm:text-lg font-bold">Contratos</h2>
+
+      <div class="xl:ml-auto flex flex-wrap items-center gap-3 font-sans font-medium text-sm">
+        <label class="flex items-center gap-2">
+          Mostrar
+          <select id="tamanhoPagina" class="h-10 rounded-xl border border-abacate-500/40 bg-white px-2 text-sm">
+            <option>5</option><option selected>10</option><option>25</option><option>50</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="sr-only">Buscar</span>
+          <input id="busca" type="search" placeholder="Buscar em todos os campos"
+                 class="h-10 w-60 max-w-full rounded-xl border border-abacate-500/40 bg-white px-3 text-sm placeholder:text-slate-400" />
+        </label>
+
+        <button type="button" class="btn btn-primario" data-acao="novo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Novo contrato
+        </button>
+
+        <details class="menu relative" id="menuMais">
+          <summary class="btn btn-suave" aria-label="Mais opções de dados">
+            Dados
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="menu-lista">
+            <button type="button" data-menu="exportar-csv">Exportar planilha (CSV)</button>
+            <button type="button" data-menu="exportar-json">Salvar backup (JSON)</button>
+            <button type="button" data-menu="importar-json">Carregar backup (JSON)</button>
+            <hr />
+            <button type="button" data-menu="exemplo">Restaurar dados de exemplo</button>
+            <button type="button" data-menu="apagar" class="perigo">Apagar todos os contratos</button>
+          </div>
+        </details>
+        <input id="arquivoImport" type="file" accept="application/json,.json" class="hidden" />
+      </div>
+    </div>
+
+    <p class="px-5 py-2 text-xs text-abacate-700 bg-abacate-50 border-b border-abacate-100">Para alterar um contrato, clique em <strong>Editar</strong> ou em qualquer parte da linha.</p>
+
+    <div class="overflow-x-auto">
+      <table class="dt" id="tabela">
+        <thead><tr id="cabecalhoTabela"></tr></thead>
+        <tbody id="corpoTabela"></tbody>
+        <tfoot><tr id="rodapeTabela"></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center gap-3 px-5 py-4 border-t border-abacate-100">
+      <p id="infoPagina" class="text-sm text-slate-600"></p>
+      <nav id="paginacao" class="sm:ml-auto flex flex-wrap items-center gap-1.5" aria-label="Paginação"></nav>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-500 pb-4 space-y-1">
+    <p id="statusSalvo"></p>
+    <p>Os dados ficam guardados neste navegador. Use <strong>Dados › Salvar backup</strong> para guardar uma cópia ou levar para outro computador.</p>
+  </footer>
+</main>
+
+<!-- ======================= FORMULÁRIO (NOVO / EDITAR) ======================= -->
+<dialog id="dlgContrato" aria-labelledby="formTitulo">
+  <form id="formContrato" class="card w-[min(600px,94vw)]" autocomplete="off">
+    <div class="card-title px-6 py-4 flex items-center">
+      <h2 id="formTitulo" class="text-lg">Novo contrato</h2>
+      <button type="button" class="icon-btn ml-auto" data-fechar aria-label="Fechar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+      <div>
+        <label class="rotulo" for="fCliente">Cliente</label>
+        <input id="fCliente" class="campo" list="listaClientes" required maxlength="80" placeholder="Escolha ou digite um novo" />
+        <datalist id="listaClientes"></datalist>
+      </div>
+      <div>
+        <label class="rotulo" for="fItem">Item (código)</label>
+        <input id="fItem" class="campo" required maxlength="30" placeholder="CT-001" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="rotulo" for="fDescricao">Descrição</label>
+        <input id="fDescricao" class="campo" required maxlength="140" placeholder="O que foi contratado" />
+      </div>
+      <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="rotulo" for="fTotal">Valor total do contrato (R$)</label>
+          <input id="fTotal" class="campo" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0,00" />
+        </div>
+        <div>
+          <label class="rotulo" for="fLiquidado">Valor liquidado (R$)</label>
+          <input id="fLiquidado" class="campo" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" />
+        </div>
+        <div>
+          <label class="rotulo" for="fAberto">Valor em aberto (calculado)</label>
+          <input id="fAberto" class="campo" type="text" readonly tabindex="-1" value="R$ 0,00" aria-describedby="dicaAberto" />
+        </div>
+        <p id="dicaAberto" class="sm:col-span-3 -mt-2 text-xs text-slate-600">O valor em aberto é o valor total menos o valor liquidado.</p>
+        <p id="erroValores" class="sm:col-span-3 -mt-2 text-xs font-semibold text-red-700 hidden" role="alert"></p>
+      </div>
+      <div>
+        <label class="rotulo" for="fCusto">Custo operacional (R$)</label>
+        <input id="fCusto" class="campo" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" />
+      </div>
+      <div>
+        <label class="rotulo" for="fDataFim">Data fim do contrato</label>
+        <input id="fDataFim" class="campo" type="date" required />
+      </div>
+
+      <!-- Prévia dos cálculos -->
+      <div class="sm:col-span-2 grid grid-cols-3 gap-3 rounded-xl bg-abacate-50 border border-abacate-200 p-3 text-center" aria-live="polite">
+        <div><p class="text-xs text-slate-600">% liquidado</p><p id="pvPct" class="num font-bold">0,00%</p></div>
+        <div><p class="text-xs text-slate-600">% em aberto</p><p id="pvPctAberto" class="num font-bold">0,00%</p></div>
+        <div><p class="text-xs text-slate-600">Margem de lucro</p><p id="pvMargem" class="num font-bold">R$ 0,00</p></div>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 bg-abacate-50 border-t border-abacate-100 flex justify-end gap-3">
+      <button type="button" class="btn btn-suave" data-fechar>Cancelar</button>
+      <button type="submit" id="btnSalvar" class="btn btn-primario">Adicionar contrato</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Aviso com "Desfazer" -->
+<div id="toast" role="status" aria-live="polite"><span id="toastTexto"></span><button type="button" id="toastAcao" class="hidden"></button></div>
+
+<script>
+/* ==========================================================================
+   1) DADOS DE EXEMPLO
+      Aparecem apenas na primeira vez que você abre o arquivo. Depois, tudo o que
+      você cadastrar pela tela fica salvo no navegador. Para recomeçar do zero,
+      use  Dados › Apagar todos os contratos.
+   ========================================================================== */
+const CONTRATOS_EXEMPLO = [
+  // CAMPESTRE / MA  (soma: liquidado R$ 648.290 | em aberto R$ 704.910)
+  { cliente: 'CAMPESTRE / MA', item: 'CT-001', descricao: 'Manutenção predial mensal',          total: 250000, liquidado: 120000, custo: 0, dataFim: '2027-03-31' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-002', descricao: 'Serviços de terraplenagem',          total: 200000, liquidado: 95290, custo: 0, dataFim: '2027-06-30' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-003', descricao: 'Fornecimento de materiais',          total: 250000, liquidado: 150000, custo: 0, dataFim: '2027-01-15' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-004', descricao: 'Projeto executivo de drenagem',      total: 150000, liquidado: 80000, custo: 0, dataFim: '2027-02-28' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-005', descricao: 'Paisagismo e áreas comuns',          total: 150000, liquidado: 60000, custo: 0, dataFim: '2027-08-20' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-006', descricao: 'Instalações elétricas',              total: 220000, liquidado: 100000, custo: 0, dataFim: '2027-05-10' },
+  { cliente: 'CAMPESTRE / MA', item: 'CT-007', descricao: 'Consultoria técnica e fiscalização', total: 133200, liquidado: 43000, custo: 0, dataFim: '2027-12-31' },
+  // Cliente B
+  { cliente: 'Cliente B', item: 'CT-101', descricao: 'Reforma da fachada',                     total: 300000, liquidado: 210000, custo: 65000, dataFim: '2026-10-10' },
+  { cliente: 'Cliente B', item: 'CT-102', descricao: 'Sistema de climatização',                total: 250000, liquidado: 85000, custo: 40000, dataFim: '2027-04-30' },
+  { cliente: 'Cliente B', item: 'CT-103', descricao: 'Sinalização e acessibilidade',           total: 50000, liquidado: 30000, custo:  9000, dataFim: '2027-02-12' },
+  // Cliente C
+  { cliente: 'Cliente C', item: 'CT-201', descricao: 'Implantação de portaria remota',         total: 200000, liquidado: 140000, custo: 52000, dataFim: '2027-07-31' },
+  { cliente: 'Cliente C', item: 'CT-202', descricao: 'Manutenção de elevadores',               total: 150000, liquidado: 55000, custo: 28000, dataFim: '2026-12-05' }
+];
+
+const CLIENTE_INICIAL = 'CAMPESTRE / MA';   // use 'Todos' para abrir somando todos os clientes
+const DIAS_ALERTA = 31;
+const CHAVE_STORAGE = 'bobby-dashboard-contratos-v1';
+
+/* ==========================================================================
+   2) UTILITÁRIOS
+   ========================================================================== */
+const $ = (id) => document.getElementById(id);
+const brl  = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const brl0 = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const pct  = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const esc  = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const arred = (v) => Math.round((Number(v) || 0) * 100) / 100;
+const novoId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+
+function moedaCompacta(v, casas = 2) {
+  const n = (x, c) => x.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+  if (Math.abs(v) >= 1e6) return `R$ ${n(v / 1e6, 2)} Mi`;
+  if (Math.abs(v) >= 1e3) return `R$ ${n(v / 1e3, casas)} Mil`;
+  return `R$ ${n(v, 2)}`;
+}
+function parseData(str) { const [a, m, d] = str.split('-').map(Number); return new Date(a, m - 1, d); }
+function formataData(str) { return parseData(str).toLocaleDateString('pt-BR'); }
+function diasAte(str) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  return Math.round((parseData(str) - hoje) / 86400000);
+}
+const soma = (arr, k) => arr.reduce((s, l) => s + l[k], 0);
+
+/* ==========================================================================
+   3) DADOS: carregar, salvar e recalcular
+   ========================================================================== */
+let CONTRATOS = [];
+let LINHAS = [];
+
+function carregarDoNavegador() {
+  try {
+    const bruto = localStorage.getItem(CHAVE_STORAGE);
+    if (bruto) { const a = JSON.parse(bruto); if (Array.isArray(a)) return a; }
+  } catch (e) { /* segue com os exemplos */ }
+  return null;
+}
+
+function definirStatus(ok) {
+  $('statusSalvo').textContent = ok
+    ? 'Alterações salvas automaticamente neste navegador.'
+    : 'Não foi possível salvar automaticamente neste navegador. Use Dados › Salvar backup para não perder as informações.';
+  $('statusSalvo').className = ok ? '' : 'text-red-700 font-semibold';
+}
+
+function salvarNoNavegador() {
+  try { localStorage.setItem(CHAVE_STORAGE, JSON.stringify(CONTRATOS)); definirStatus(true); }
+  catch (e) { definirStatus(false); }
+}
+
+function recalcula() {
+  LINHAS = CONTRATOS.map(c => {
+    const aberto = arred(c.total - c.liquidado);   // valor em aberto = valor total − valor liquidado
+    return { ...c, aberto, pctLiq: c.total ? (c.liquidado / c.total) * 100 : 0, margem: c.liquidado - c.custo, dias: diasAte(c.dataFim) };
+  });
+}
+
+const nomesClientes = () => [...new Set(CONTRATOS.map(c => c.cliente))];
+
+/* ==========================================================================
+   4) ESTADO
+   ========================================================================== */
+const estado = { cliente: CLIENTE_INICIAL, busca: '', ordem: { chave: null, dir: 1 }, pagina: 1, porPagina: 10 };
+
+const COLUNAS = [
+  { chave: null,        rotulo: 'Ações', classe: 'col-acoes' },
+  { chave: 'cliente',   rotulo: 'Cliente' },
+  { chave: 'item',      rotulo: 'Item' },
+  { chave: 'descricao', rotulo: 'Descrição' },
+  { chave: 'liquidado', rotulo: 'Valor Liquidado',   dir: 'r' },
+  { chave: 'aberto',    rotulo: 'Valor em Aberto',   dir: 'r' },
+  { chave: 'total',     rotulo: 'Valor Total',       dir: 'r' },
+  { chave: 'pctLiq',    rotulo: '% Liquidado',       dir: 'r' },
+  { chave: 'custo',     rotulo: 'Custo Operacional', dir: 'r' },
+  { chave: 'margem',    rotulo: 'Margem de Lucro',   dir: 'r' },
+  { chave: 'dataFim',   rotulo: 'Data Fim' },
+  { chave: 'dias',      rotulo: 'Dias para vencimento', dir: 'r' }
+];
+
+const linhasDoCliente = () => estado.cliente === 'Todos' ? LINHAS : LINHAS.filter(l => l.cliente === estado.cliente);
+
+/* ==========================================================================
+   5) FILTRO DE CLIENTE
+   ========================================================================== */
+function montaFiltro() {
+  const clientes = ['Todos', ...nomesClientes()];
+  if (!clientes.includes(estado.cliente)) estado.cliente = 'Todos';
+  $('filtroCliente').innerHTML = clientes.map(c =>
+    `<option value="${esc(c)}" ${c === estado.cliente ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  $('listaClientes').innerHTML = nomesClientes().map(c => `<option value="${esc(c)}"></option>`).join('');
+}
+$('filtroCliente').addEventListener('change', e => { estado.cliente = e.target.value; estado.pagina = 1; atualizaTudo(); });
+
+/* ==========================================================================
+   6) KPIs E ALERTA
+   ========================================================================== */
+function atualizaKPIs() {
+  const l = linhasDoCliente();
+  $('kpiLiquidado').textContent = moedaCompacta(soma(l, 'liquidado'));
+  $('kpiAberto').textContent    = moedaCompacta(soma(l, 'aberto'));
+  $('kpiTotal').textContent     = moedaCompacta(soma(l, 'total'));
+  $('kpiCusto').textContent     = moedaCompacta(soma(l, 'custo'));
+  $('kpiMargem').textContent    = moedaCompacta(soma(l, 'margem'), 0);
+  $('qtdVencer').textContent    = l.filter(x => x.dias >= 0 && x.dias <= DIAS_ALERTA).length;
+}
+
+/* ==========================================================================
+   7) GRÁFICOS (Chart.js)
+   ========================================================================== */
+Chart.defaults.font.family = '"Instrument Sans", system-ui, sans-serif';
+Chart.defaults.color = '#3B4030';
+
+const rotulosBarras = {
+  id: 'rotulosBarras',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = '700 13px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.fillStyle = '#20241A';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+      ctx.fillText(brl0.format(chart.data.datasets[0].data[i]), bar.x, Math.min(bar.y, bar.base) - 8);
+    });
+    ctx.restore();
+  }
+};
+
+const textoCentro = {
+  id: 'textoCentro',
+  afterDraw(chart) {
+    const { ctx, chartArea: a } = chart;
+    const cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#5A6046';
+    ctx.font = '500 12px "Instrument Sans", system-ui, sans-serif';
+    ctx.fillText('Valor total', cx, cy - 12);
+    ctx.fillStyle = '#20241A';
+    ctx.font = '800 20px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.fillText(chart.options.plugins.textoCentro.texto || '', cx, cy + 12);
+    ctx.restore();
+  }
+};
+
+const eixoMi  = (v) => `R$ ${(v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} Mi`;
+const eixoMil = (v) => `R$ ${(v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} Mil`;
+
+const chartMargem = new Chart($('chartMargem'), {
+  type: 'bar',
+  data: { labels: [], datasets: [{ label: 'Margem de Lucro', data: [], backgroundColor: '#2F6FDE', hoverBackgroundColor: '#1F56B8', borderRadius: 8, maxBarThickness: 96 }] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: { padding: { top: 28 } },
+    scales: {
+      y: { beginAtZero: true, suggestedMax: 600000, ticks: { callback: eixoMi, maxTicksLimit: 8 }, grid: { color: '#E8ECD6' }, border: { display: false } },
+      x: { grid: { display: false }, title: { display: true, text: 'Cliente' } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ` Margem: ${brl.format(c.parsed.y)}` } }
+    }
+  },
+  plugins: [rotulosBarras]
+});
+
+const CORES_ROSCA = ['#B5C334', '#6D4BEA'];
+const chartRosca = new Chart($('chartRosca'), {
+  type: 'doughnut',
+  data: { labels: ['Liquidado', 'Aberto'], datasets: [{ data: [0, 0], backgroundColor: CORES_ROSCA, borderColor: '#fff', borderWidth: 3, hoverOffset: 6 }] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '64%',
+    plugins: {
+      legend: { display: false },
+      textoCentro: { texto: '' },
+      tooltip: {
+        callbacks: {
+          label: (c) => {
+            const t = c.dataset.data.reduce((a, b) => a + b, 0) || 1;
+            return ` ${c.label}: ${brl.format(c.parsed)} (${pct(c.parsed / t * 100)})`;
+          }
+        }
+      }
+    }
+  },
+  plugins: [textoCentro]
+});
+
+function atualizaGraficos() {
+  const linhas = linhasDoCliente();
+
+  const porCliente = {};
+  linhas.forEach(l => { porCliente[l.cliente] = (porCliente[l.cliente] || 0) + l.margem; });
+  const valores = Object.values(porCliente);
+  const grande = Math.max(0, ...valores.map(Math.abs)) >= 400000;   // escala em Mi (como no modelo) ou em Mil
+  chartMargem.options.scales.y.ticks.callback = grande ? eixoMi : eixoMil;
+  chartMargem.options.scales.y.suggestedMax = grande ? 600000 : undefined;
+  chartMargem.data.labels = Object.keys(porCliente);
+  chartMargem.data.datasets[0].data = valores;
+  chartMargem.update();
+
+  const liq = soma(linhas, 'liquidado'), ab = soma(linhas, 'aberto'), tot = liq + ab;
+  const pLiq = tot ? liq / tot * 100 : 0, pAb = tot ? ab / tot * 100 : 0;
+  chartRosca.data.datasets[0].data = tot ? [liq, ab] : [1, 0];
+  chartRosca.data.datasets[0].backgroundColor = tot ? CORES_ROSCA : ['#E8ECD6', '#E8ECD6'];
+  chartRosca.options.plugins.textoCentro.texto = moedaCompacta(tot);
+  chartRosca.update();
+
+  $('legendaRosca').innerHTML = [['Liquidado', pLiq, CORES_ROSCA[0]], ['Aberto', pAb, CORES_ROSCA[1]]].map(([nome, p, cor]) => `
+    <li class="flex items-center gap-2">
+      <span class="inline-block w-3.5 h-3.5 rounded-full" style="background:${cor}"></span>
+      <span>${nome}</span>
+      <strong class="num">${pct(p)}</strong>
+    </li>`).join('');
+}
+
+/* ==========================================================================
+   8) TABELA (busca, ordenação, paginação, editar e excluir)
+   ========================================================================== */
+function montaCabecalho() {
+  $('cabecalhoTabela').innerHTML = COLUNAS.map(c => c.chave
+    ? `<th scope="col" data-chave="${c.chave}" class="ordena ${c.dir || ''}" tabindex="0" aria-sort="none">${c.rotulo}<span class="arrow" aria-hidden="true">↕</span></th>`
+    : `<th scope="col" class="${c.classe || ''}">${c.rotulo}</th>`).join('');
+
+  $('cabecalhoTabela').querySelectorAll('th.ordena').forEach(th => {
+    const ordenar = () => {
+      const k = th.dataset.chave;
+      estado.ordem = estado.ordem.chave === k ? { chave: k, dir: -estado.ordem.dir } : { chave: k, dir: 1 };
+      estado.pagina = 1;
+      atualizaTabela();
+    };
+    th.addEventListener('click', ordenar);
+    th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(); } });
+  });
+}
+
+function textoBusca(l) {
+  return [l.cliente, l.item, l.descricao, brl.format(l.liquidado), brl.format(l.aberto), brl.format(l.total),
+          pct(l.pctLiq), brl.format(l.custo), brl.format(l.margem), formataData(l.dataFim), l.dias].join(' ').toLowerCase();
+}
+
+function badgeDias(d) {
+  if (d < 0)            return `<span class="inline-block rounded-full bg-slate-200 text-slate-700 px-2.5 py-0.5 text-xs font-semibold">Vencido há ${Math.abs(d)} d</span>`;
+  if (d <= DIAS_ALERTA) return `<span class="inline-block rounded-full bg-red-100 text-red-700 px-2.5 py-0.5 text-xs font-semibold">${d} dias</span>`;
+  if (d <= 90)          return `<span class="inline-block rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-semibold">${d} dias</span>`;
+  return `<span class="inline-block rounded-full bg-abacate-100 text-abacate-700 px-2.5 py-0.5 text-xs font-semibold">${d} dias</span>`;
+}
+
+function barraPct(p) {
+  return `<div class="flex items-center justify-end gap-2">
+    <div class="w-14 h-1.5 rounded-full bg-abacate-100 overflow-hidden"><div class="h-full rounded-full bg-abacate-500" style="width:${Math.min(Math.max(p, 0), 100)}%"></div></div>
+    <span class="num font-semibold w-14 text-right">${pct(p)}</span>
+  </div>`;
+}
+
+const ICONE_EDITAR  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
+const ICONE_EXCLUIR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+
+function atualizaTabela() {
+  const termo = estado.busca.trim().toLowerCase();
+  let linhas = linhasDoCliente().filter(l => !termo || textoBusca(l).includes(termo));
+
+  const { chave, dir } = estado.ordem;
+  if (chave) {
+    linhas = [...linhas].sort((a, b) => {
+      const x = a[chave], y = b[chave];
+      return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR')) * dir;
+    });
+  }
+  $('cabecalhoTabela').querySelectorAll('th.ordena').forEach(th => {
+    const ativo = th.dataset.chave === chave;
+    th.setAttribute('aria-sort', ativo ? (dir === 1 ? 'ascending' : 'descending') : 'none');
+    th.querySelector('.arrow').textContent = ativo ? (dir === 1 ? '↑' : '↓') : '↕';
+  });
+
+  const total = linhas.length;
+  const paginas = Math.max(1, Math.ceil(total / estado.porPagina));
+  estado.pagina = Math.min(Math.max(estado.pagina, 1), paginas);
+  const ini = (estado.pagina - 1) * estado.porPagina;
+  const fatia = linhas.slice(ini, ini + estado.porPagina);
+
+  if (fatia.length) {
+    $('corpoTabela').innerHTML = fatia.map(l => `
+      <tr class="linha" data-id="${esc(l.id)}" title="Clique para editar este contrato">
+        <td class="col-acoes">
+          <div class="flex items-center gap-1">
+            <button type="button" class="btn-editar" data-acao="editar" data-id="${esc(l.id)}" aria-label="Editar contrato ${esc(l.item)}">${ICONE_EDITAR}Editar</button>
+            <button type="button" class="icon-btn perigo" data-acao="excluir" data-id="${esc(l.id)}" title="Excluir" aria-label="Excluir contrato ${esc(l.item)}">${ICONE_EXCLUIR}</button>
+          </div>
+        </td>
+        <td class="font-semibold">${esc(l.cliente)}</td>
+        <td>${esc(l.item)}</td>
+        <td class="desc">${esc(l.descricao)}</td>
+        <td class="r num">${brl.format(l.liquidado)}</td>
+        <td class="r num">${brl.format(l.aberto)}</td>
+        <td class="r num font-semibold">${brl.format(l.total)}</td>
+        <td class="r">${barraPct(l.pctLiq)}</td>
+        <td class="r num">${brl.format(l.custo)}</td>
+        <td class="r num font-semibold">${brl.format(l.margem)}</td>
+        <td>${formataData(l.dataFim)}</td>
+        <td class="r">${badgeDias(l.dias)}</td>
+      </tr>`).join('');
+  } else if (!CONTRATOS.length) {
+    $('corpoTabela').innerHTML = `<tr><td colspan="${COLUNAS.length}" class="text-center py-12">
+      <p class="font-display font-bold text-lg mb-1">Nenhum contrato cadastrado</p>
+      <p class="text-slate-600 mb-4">Adicione o primeiro contrato para ver os indicadores e gráficos.</p>
+      <button type="button" class="btn btn-primario" data-acao="novo">Novo contrato</button></td></tr>`;
+  } else {
+    $('corpoTabela').innerHTML = `<tr><td colspan="${COLUNAS.length}" class="text-center py-10 text-slate-500">Nenhum contrato encontrado. Ajuste a busca ou escolha outro cliente.</td></tr>`;
+  }
+
+  const tl = soma(linhas, 'liquidado'), ta = soma(linhas, 'aberto'), tt = tl + ta;
+  $('rodapeTabela').innerHTML = `
+    <td colspan="4">Total (${total} ${total === 1 ? 'contrato' : 'contratos'})</td>
+    <td class="r num">${brl.format(tl)}</td>
+    <td class="r num">${brl.format(ta)}</td>
+    <td class="r num">${brl.format(tt)}</td>
+    <td class="r num">${pct(tt ? tl / tt * 100 : 0)}</td>
+    <td class="r num">${brl.format(soma(linhas, 'custo'))}</td>
+    <td class="r num">${brl.format(soma(linhas, 'margem'))}</td>
+    <td colspan="2"></td>`;
+
+  $('infoPagina').textContent = total ? `Mostrando ${ini + 1} a ${ini + fatia.length} de ${total} contratos` : 'Mostrando 0 contratos';
+  montaPaginacao(paginas);
+}
+
+function montaPaginacao(paginas) {
+  const p = estado.pagina;
+  const lista = [...new Set([1, paginas, p - 1, p, p + 1])].filter(n => n >= 1 && n <= paginas).sort((a, b) => a - b);
+  let html = `<button type="button" class="pg-btn" data-p="${p - 1}" ${p === 1 ? 'disabled' : ''}>Anterior</button>`;
+  lista.forEach((n, i) => {
+    if (i > 0 && n - lista[i - 1] > 1) html += `<span class="px-1 text-slate-400" aria-hidden="true">…</span>`;
+    html += `<button type="button" class="pg-btn" data-p="${n}" ${n === p ? 'aria-current="page"' : ''}>${n}</button>`;
+  });
+  html += `<button type="button" class="pg-btn" data-p="${p + 1}" ${p === paginas ? 'disabled' : ''}>Próxima</button>`;
+  $('paginacao').innerHTML = html;
+}
+$('paginacao').addEventListener('click', e => {
+  const b = e.target.closest('button[data-p]');
+  if (b && !b.disabled) { estado.pagina = Number(b.dataset.p); atualizaTabela(); }
+});
+
+/* ==========================================================================
+   9) AVISOS (toast) e "Desfazer"
+   ========================================================================== */
+let timerToast;
+function aviso(texto, acao) {
+  $('toastTexto').textContent = texto;
+  const btn = $('toastAcao');
+  btn.onclick = null;
+  if (acao) { btn.textContent = acao.rotulo; btn.classList.remove('hidden'); btn.onclick = () => { acao.executar(); $('toast').classList.remove('on'); }; }
+  else btn.classList.add('hidden');
+  $('toast').classList.add('on');
+  clearTimeout(timerToast);
+  timerToast = setTimeout(() => $('toast').classList.remove('on'), acao ? 7000 : 3200);
+}
+
+/* ==========================================================================
+   10) FORMULÁRIO: novo e editar
+   ========================================================================== */
+let editandoId = null;
+const dlg = $('dlgContrato');
+
+function proximoItem() {
+  const nums = CONTRATOS.map(c => /^CT-(\d+)$/i.exec(c.item)).filter(Boolean).map(m => parseInt(m[1], 10));
+  return 'CT-' + String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, '0');
+}
+
+function lerForm() {
+  return {
+    cliente: $('fCliente').value.trim(),
+    item: $('fItem').value.trim(),
+    descricao: $('fDescricao').value.trim(),
+    total: arred($('fTotal').value),
+    liquidado: arred($('fLiquidado').value),
+    custo: arred($('fCusto').value),
+    dataFim: $('fDataFim').value
+  };
+}
+
+function atualizaPrevia() {
+  const d = lerForm();
+  const aberto = arred(d.total - d.liquidado);
+  const excedeu = d.liquidado > d.total;
+
+  $('fAberto').value = brl.format(aberto);
+  $('fAberto').style.color = excedeu ? '#B42318' : '';
+  $('pvPct').textContent = pct(d.total ? d.liquidado / d.total * 100 : 0);
+  $('pvPctAberto').textContent = pct(d.total ? Math.max(aberto, 0) / d.total * 100 : 0);
+  $('pvMargem').textContent = brl.format(d.liquidado - d.custo);
+
+  // O valor liquidado não pode ser maior que o valor total
+  const msg = 'O valor liquidado não pode ser maior que o valor total do contrato.';
+  $('fLiquidado').setCustomValidity(excedeu ? msg : '');
+  $('erroValores').textContent = excedeu ? msg : '';
+  $('erroValores').classList.toggle('hidden', !excedeu);
+}
+['fTotal', 'fLiquidado', 'fCusto'].forEach(id => $(id).addEventListener('input', atualizaPrevia));
+
+function abrirForm(id) {
+  editandoId = id || null;
+  const c = id ? CONTRATOS.find(x => x.id === id) : null;
+  $('formTitulo').textContent = c ? 'Editar contrato' : 'Novo contrato';
+  $('btnSalvar').textContent = c ? 'Salvar alterações' : 'Adicionar contrato';
+  $('fCliente').value   = c ? c.cliente : (estado.cliente !== 'Todos' ? estado.cliente : '');
+  $('fItem').value      = c ? c.item : proximoItem();
+  $('fDescricao').value = c ? c.descricao : '';
+  $('fTotal').value     = c ? c.total : '';
+  $('fLiquidado').value = c ? c.liquidado : '';
+  $('fCusto').value     = c ? c.custo : '';
+  $('fDataFim').value   = c ? c.dataFim : '';
+  atualizaPrevia();
+  dlg.showModal();
+  $(c ? 'fDescricao' : 'fCliente').focus();
+}
+
+dlg.querySelectorAll('[data-fechar]').forEach(b => b.addEventListener('click', () => dlg.close()));
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });   // clique no fundo escuro fecha
+
+$('formContrato').addEventListener('submit', e => {
+  e.preventDefault();
+  const d = lerForm();
+  // Usa a grafia de um cliente que já existe (evita "Cliente B" e "cliente b" como clientes diferentes)
+  const existente = nomesClientes().find(n => n.toLowerCase() === d.cliente.toLowerCase());
+  if (existente) d.cliente = existente;
+
+  if (editandoId) {
+    const i = CONTRATOS.findIndex(x => x.id === editandoId);
+    CONTRATOS[i] = { ...CONTRATOS[i], ...d };
+    aviso('Alterações salvas.');
+  } else {
+    CONTRATOS.push({ id: novoId(), ...d });
+    $('busca').value = ''; estado.busca = '';
+    estado.pagina = Infinity;   // vai para a última página, onde o novo contrato aparece
+    aviso('Contrato adicionado.');
+  }
+  // Se o filtro está em outro cliente, muda para o cliente do contrato salvo para ele ficar visível
+  if (estado.cliente !== 'Todos' && estado.cliente !== d.cliente) estado.cliente = d.cliente;
+
+  dlg.close();
+  aposMudanca();
+});
+
+function excluir(id) {
+  const indice = CONTRATOS.findIndex(x => x.id === id);
+  if (indice < 0) return;
+  const [removido] = CONTRATOS.splice(indice, 1);
+  aposMudanca();
+  aviso(`Contrato ${removido.item} excluído.`, {
+    rotulo: 'Desfazer',
+    executar: () => { CONTRATOS.splice(indice, 0, removido); aposMudanca(); }
+  });
+}
+
+/* Clicar em qualquer parte da linha abre a edição */
+$('corpoTabela').addEventListener('click', e => {
+  if (e.target.closest('button')) return;           // botões têm ação própria
+  const tr = e.target.closest('tr[data-id]');
+  if (tr) abrirForm(tr.dataset.id);
+});
+
+/* Cliques nos botões "Novo contrato", editar e excluir (delegação de eventos) */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-acao]');
+  if (!b) return;
+  if (b.dataset.acao === 'novo') abrirForm();
+  if (b.dataset.acao === 'editar') abrirForm(b.dataset.id);
+  if (b.dataset.acao === 'excluir') excluir(b.dataset.id);
+});
+
+/* ==========================================================================
+   11) MENU "DADOS": exportar, importar, restaurar e apagar
+   ========================================================================== */
+function baixar(nome, conteudo, tipo) {
+  const url = URL.createObjectURL(new Blob([conteudo], { type: tipo }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const hojeISO = () => new Date().toISOString().slice(0, 10);
+
+function exportarCSV() {
+  const cab = ['Cliente', 'Item', 'Descrição', 'Valor Liquidado', 'Valor em Aberto', 'Valor Total', '% Liquidado', 'Custo Operacional', 'Margem de Lucro', 'Data Fim', 'Dias para vencimento'];
+  const n2 = (v) => v.toFixed(2).replace('.', ',');
+  const q = (s) => `"${String(s).replace(/"/g, '""')}"`;
+  const linhas = LINHAS.map(l => [q(l.cliente), q(l.item), q(l.descricao), n2(l.liquidado), n2(l.aberto), n2(l.total), n2(l.pctLiq), n2(l.custo), n2(l.margem), formataData(l.dataFim), l.dias].join(';'));
+  baixar(`bobby-contratos-${hojeISO()}.csv`, '\uFEFF' + [cab.map(q).join(';'), ...linhas].join('\r\n'), 'text/csv;charset=utf-8');
+}
+
+function exportarJSON() {
+  const limpo = CONTRATOS.map(({ id, ...resto }) => resto);
+  baixar(`bobby-backup-${hojeISO()}.json`, JSON.stringify(limpo, null, 2), 'application/json');
+}
+
+function validaImportacao(a) {
+  if (!Array.isArray(a)) throw new Error('O arquivo precisa conter uma lista de contratos.');
+  return a.map((c, i) => {
+    if (!c || typeof c !== 'object') throw new Error(`O contrato ${i + 1} está inválido.`);
+    const liq = Number(c.liquidado ?? 0), custo = Number(c.custo ?? 0);
+    // Formato atual: "total". Dados antigos traziam "liquidado" + "aberto": nesse caso total = soma dos dois.
+    const temTotal = c.total !== undefined && c.total !== null && c.total !== '';
+    const total = temTotal ? Number(c.total) : liq + Number(c.aberto ?? 0);
+    const okTexto = typeof c.cliente === 'string' && c.cliente.trim();
+    const okData = typeof c.dataFim === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.dataFim);
+    if (!okTexto || !okData || [liq, custo, total].some(v => !Number.isFinite(v) || v < 0))
+      throw new Error(`O contrato ${i + 1} está incompleto ou com valores inválidos.`);
+    if (liq > total + 0.005)
+      throw new Error(`No contrato ${i + 1}, o valor liquidado é maior que o valor total.`);
+    return { id: novoId(), cliente: c.cliente.trim(), item: String(c.item ?? '').trim(), descricao: String(c.descricao ?? '').trim(),
+             total: arred(total), liquidado: arred(liq), custo: arred(custo), dataFim: c.dataFim };
+  });
+}
+
+$('arquivoImport').addEventListener('change', async e => {
+  const arq = e.target.files[0];
+  e.target.value = '';
+  if (!arq) return;
+  try {
+    const novos = validaImportacao(JSON.parse(await arq.text()));
+    if (!confirm(`Carregar ${novos.length} contratos do backup? Isso substitui os contratos atuais.`)) return;
+    CONTRATOS = novos;
+    estado.cliente = 'Todos'; estado.pagina = 1;
+    aposMudanca();
+    aviso(`${novos.length} contratos carregados.`);
+  } catch (err) {
+    alert('Não foi possível carregar o backup. ' + err.message);
+  }
+});
+
+$('menuMais').addEventListener('click', e => {
+  const b = e.target.closest('button[data-menu]');
+  if (!b) return;
+  $('menuMais').open = false;
+  switch (b.dataset.menu) {
+    case 'exportar-csv':  exportarCSV(); break;
+    case 'exportar-json': exportarJSON(); break;
+    case 'importar-json': $('arquivoImport').click(); break;
+    case 'exemplo':
+      if (confirm('Substituir todos os contratos pelos dados de exemplo?')) {
+        CONTRATOS = CONTRATOS_EXEMPLO.map(c => ({ id: novoId(), ...c }));
+        estado.cliente = CLIENTE_INICIAL; estado.pagina = 1;
+        aposMudanca(); aviso('Dados de exemplo restaurados.');
+      }
+      break;
+    case 'apagar':
+      if (confirm('Apagar todos os contratos? Salve um backup antes se quiser guardar os dados.')) {
+        CONTRATOS = []; estado.cliente = 'Todos'; estado.pagina = 1;
+        aposMudanca(); aviso('Todos os contratos foram apagados.');
+      }
+      break;
+  }
+});
+document.addEventListener('click', e => { if (!e.target.closest('#menuMais')) $('menuMais').open = false; });
+
+/* ==========================================================================
+   12) INICIALIZAÇÃO
+   ========================================================================== */
+function atualizaTudo() {
+  atualizaKPIs();
+  atualizaGraficos();
+  atualizaTabela();
+}
+
+function aposMudanca() {
+  salvarNoNavegador();
+  recalcula();
+  montaFiltro();
+  atualizaTudo();
+}
+
+$('busca').addEventListener('input', e => { estado.busca = e.target.value; estado.pagina = 1; atualizaTabela(); });
+$('tamanhoPagina').addEventListener('change', e => { estado.porPagina = Number(e.target.value); estado.pagina = 1; atualizaTabela(); });
+
+const salvos = carregarDoNavegador();
+CONTRATOS = salvos ? validaImportacaoSilenciosa(salvos) : CONTRATOS_EXEMPLO.map(c => ({ id: novoId(), ...c }));
+
+// Garante que dados salvos por versões anteriores tenham id e valores numéricos
+function validaImportacaoSilenciosa(a) {
+  try { return validaImportacao(a); } catch (e) { return CONTRATOS_EXEMPLO.map(c => ({ id: novoId(), ...c })); }
+}
+
+recalcula();
+montaFiltro();
+montaCabecalho();
+atualizaTudo();
+if (salvos) definirStatus(true);
+else $('statusSalvo').textContent = 'Você está vendo dados de exemplo. Cadastre seus contratos ou use Dados › Apagar todos os contratos para começar do zero.';
+</script>
+</body>
+</html>
